@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 403281b8baa7f1b4baca00ab3e8e3543
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - currentState: {instanceID: 0}
+  - remainState: {instanceID: 0}
+  - movement: {instanceID: 0}
+  - shooting: {instanceID: 0}
+  - health: {instanceID: 0}
+  - enemyManager: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -10,6 +10,13 @@ public class EnemySpawnerManager : MonoBehaviour
     public PlayerHealth PlayerHealth => _playerHealth;
     [SerializeField] private PlayerHealth _playerHealth;
     [SerializeField] private PlayerAgent _playerAgent;
+
+    [Header("Recompensas de Combate")]
+    [Tooltip("Activar en Escenario 1 (matar y sobrevivir). Desactivar en Escenario 2 (recoger objeto).")]
+    [SerializeField] private bool _enableCombatRewards = false;
+    [SerializeField] private float _hitReward = 0.3f;
+    [SerializeField] private float _killReward = 1f;
+
     private List<GameObject> _enemies = new List<GameObject>();
 
     public void ResetEnemies()
@@ -28,6 +35,21 @@ public class EnemySpawnerManager : MonoBehaviour
         enemy.GetComponent<EnemyHealth>().OnHit += OnEnemyHitHandler;
     }
 
+    public List<Vector3> GetAllSpawnPointPositions()
+    {
+        List<Vector3> positions = new List<Vector3>();
+        EnemySpawner[] spawners = GetComponentsInChildren<EnemySpawner>();
+        foreach (EnemySpawner spawner in spawners)
+        {
+            if (spawner.SpawnPoints == null) continue;
+            foreach (Transform sp in spawner.SpawnPoints)
+            {
+                if (sp != null) positions.Add(sp.position);
+            }
+        }
+        return positions;
+    }
+
     public Vector3 GetClosestEnemyPositionFromPlayer()
     {
         if (_enemies.Count == 0)
@@ -39,18 +61,14 @@ public class EnemySpawnerManager : MonoBehaviour
 
     private void OnEnemyHitHandler()
     {
-        if (_playerAgent != null)
-        {
-            _playerAgent.AddReward(0.1f);
-        }
+        if (_enableCombatRewards && _playerAgent != null)
+            _playerAgent.AddReward(_hitReward);
     }
 
     private void OnEnemyDeathHandler(EnemyHealth enemy)
     {
-        if (_playerAgent != null)
-        {
-            _playerAgent.AddReward(1f);
-        }
+        if (_enableCombatRewards && _playerAgent != null)
+            _playerAgent.AddReward(_killReward);
 
         enemy.OnDeath -= OnEnemyDeathHandler;
         enemy.OnHit -= OnEnemyHitHandler;

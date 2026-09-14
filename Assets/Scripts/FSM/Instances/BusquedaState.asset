@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d2dde28a348161438e5fd0b66a64462, type: 3}
+  m_Name: BusquedaState
+  m_EditorClassIdentifier: Assembly-CSharp::BusquedaState
+  combatState: {fileID: 11400000, guid: f4bb298a158f2f648807572c7c7d012b, type: 2}
+  fleeState: {fileID: 11400000, guid: 72416e97151cb9b4d842a2cba585277c, type: 2}
+  wanderRadius: 10
+  wanderTimer: 3
+  rotationSpeed: 120
+  minMoveThreshold: 0.3

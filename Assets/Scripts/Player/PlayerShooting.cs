@@ -9,7 +9,12 @@ public class PlayerShooting : MonoBehaviour
     [SerializeField] private PlayerInputs _playerInputs;
     [SerializeField] private PlayerAgent _playerAgent;
 
+    [Header("Recompensas ML")]
+    [Tooltip("Escenario 0: -0.1  |  Escenario 1: -0.02")]
+    [SerializeField] private float _missPenalty = -0.02f;
+
     float timer;
+    float _debugLogTimer;
     Ray shootRay = new Ray();
     RaycastHit shootHit;
     int shootableMask;
@@ -30,69 +35,74 @@ public class PlayerShooting : MonoBehaviour
     }
 
 
-    void Update ()
+    void Update()
     {
         timer += Time.deltaTime;
+        _debugLogTimer += Time.deltaTime;
 
-		if(_playerInputs.IsShooting)
-        {
-            Shoot ();
-        }
+        if (_playerInputs.IsShooting)
+            Shoot();
 
-        if(timer >= timeBetweenBullets * effectsDisplayTime)
-        {
-            DisableEffects ();
-        }
+        if (timer >= timeBetweenBullets * effectsDisplayTime)
+            DisableEffects();
     }
 
 
     public void DisableEffects ()
     {
-        gunLine.enabled = false;
-        gunLight.enabled = false;
+        if (gunLine  != null) gunLine.enabled  = false;
+        if (gunLight != null) gunLight.enabled = false;
     }
 
 
-    public void Shoot ()
+    // Jugador humano y DQN: disparan en la dirección que mira el cañón.
+    public void Shoot()
+    {
+        FireRay(transform.forward);
+    }
+
+    // FSM / Subsunción: disparan directamente hacia el objetivo sin depender de
+    // que MoveRotation haya aplicado la rotación en el physics step actual.
+    public void ShootToward(Vector3 targetWorldPosition)
+    {
+        Vector3 dir = (targetWorldPosition - transform.position).normalized;
+        FireRay(dir);
+    }
+
+    private void FireRay(Vector3 direction)
     {
         if (timer < timeBetweenBullets || Time.timeScale == 0)
             return;
 
+        _debugLogTimer = 0f;
         timer = 0f;
 
-        gunAudio.Play ();
+        if (gunAudio     != null) gunAudio.Play();
+        if (gunLight     != null) gunLight.enabled = true;
+        if (gunParticles != null) { gunParticles.Stop(); gunParticles.Play(); }
+        if (gunLine      != null) { gunLine.enabled = true; gunLine.SetPosition(0, transform.position); }
 
-        gunLight.enabled = true;
-
-        gunParticles.Stop ();
-        gunParticles.Play ();
-
-        gunLine.enabled = true;
-        gunLine.SetPosition (0, transform.position);
-
-        shootRay.origin = transform.position;
-        shootRay.direction = transform.forward;
+        shootRay.origin    = transform.position;
+        shootRay.direction = direction;
 
         bool didHitEnemy = false;
 
-        if(Physics.Raycast (shootRay, out shootHit, range, shootableMask))
+        if (Physics.Raycast(shootRay, out shootHit, range, shootableMask))
         {
-            EnemyHealth enemyHealth = shootHit.collider.GetComponent <EnemyHealth> ();
-            if(enemyHealth != null)
+            EnemyHealth enemyHealth = shootHit.collider.GetComponent<EnemyHealth>();
+            if (enemyHealth != null)
             {
-                enemyHealth.TakeDamage (damagePerShot, shootHit.point);
+                enemyHealth.TakeDamage(damagePerShot, shootHit.point);
                 didHitEnemy = true;
             }
-            gunLine.SetPosition (1, shootHit.point);
+            if (gunLine != null) gunLine.SetPosition(1, shootHit.point);
         }
         else
         {
-            gunLine.SetPosition (1, shootRay.origin + shootRay.direction * range);
+            if (gunLine != null) gunLine.SetPosition(1, shootRay.origin + shootRay.direction * range);
         }
 
         if (!didHitEnemy && _playerAgent != null)
-        {
-            _playerAgent.AddReward(-0.1f);
-        }
+            _playerAgent.AddTrackedReward(_missPenalty);
     }
 }

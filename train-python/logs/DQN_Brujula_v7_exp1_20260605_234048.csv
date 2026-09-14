@@ -1,0 +1,4 @@
+episodio,paso_global,reward,monedas,pasos_ep,epsilon,fase_curriculum,victoria
+1,146,-9805.29,2,146,1.0000,0,0
+2,1146,-49.99,0,1000,0.9996,0,0
+3,2146,-49.99,0,1000,0.9993,0,0

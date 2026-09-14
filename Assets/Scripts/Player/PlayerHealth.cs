@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using Unity.MLAgents.Policies;
 
 
 public class PlayerHealth : MonoBehaviour
@@ -16,12 +17,20 @@ public class PlayerHealth : MonoBehaviour
 
     [SerializeField] private PlayerAgent _playerAgent;
 
+    [Header("Recompensas ML")]
+    [Tooltip("Escenario 0: -1.0  |  Escenario 1: 0 (sin penalización por daño)")]
+    [SerializeField] private float _damagePenalty = 0f;
+    [Tooltip("Escenario 0: -5.0  |  Escenario 1: -300")]
+    [SerializeField] private float _deathPenalty  = -300f;
+
     Animator anim;
     AudioSource playerAudio;
     PlayerMovement playerMovement;
     PlayerShooting playerShooting;
     bool isDead;
     bool damaged;
+
+    public bool IsDead => isDead;
 
 
     void Awake ()
@@ -53,13 +62,25 @@ public class PlayerHealth : MonoBehaviour
 
     public void ResetHealth()
     {
+        // Re-obtener referencias por si se llama antes del Awake de esta instancia
+        // (ocurre cuando SurvivalRecorder recarga la escena y ML-Agents dispara
+        // OnEpisodeBegin antes de que Awake haya corrido en el nuevo objeto)
+        if (anim          == null) anim          = GetComponent<Animator>();
+        if (playerMovement == null) playerMovement = GetComponent<PlayerMovement>();
+        if (playerShooting == null) playerShooting = GetComponentInChildren<PlayerShooting>();
+
         currentHealth = startingHealth;
+        damaged       = false;
+        isDead        = false;
 
-        damaged = false;
-        isDead = false;
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerShooting != null) playerShooting.enabled = true;
 
-        playerMovement.enabled = true;
-        playerShooting.enabled = true;
+        // Sacar al animador del estado "Die" y volver al estado base
+        if (anim != null) { anim.Rebind(); anim.Update(0f); }
+
+        if (healthSlider != null)
+            healthSlider.value = currentHealth;
     }
 
     public void TakeDamage (int amount)
@@ -67,15 +88,13 @@ public class PlayerHealth : MonoBehaviour
         damaged = true;
         currentHealth -= amount;
 
-        if (_playerAgent != null)
-        {
-            _playerAgent.AddReward(-1f);
-        }
-        else
-        {
+        if (healthSlider != null)
             healthSlider.value = currentHealth;
-            playerAudio.Play ();
-        }
+
+        playerAudio.Play();
+
+        if (_playerAgent != null && _damagePenalty != 0f)
+            _playerAgent.AddTrackedReward(_damagePenalty);
 
         if(currentHealth <= 0 && !isDead)
         {
@@ -96,14 +115,34 @@ public class PlayerHealth : MonoBehaviour
 
         if (_playerAgent != null)
         {
-            _playerAgent.AddReward(-5f);
-            _playerAgent.EndEpisode();
+            _playerAgent.AddTrackedReward(_deathPenalty);
+            playerShooting.DisableEffects();
+            anim.SetTrigger("Die");
+            StartCoroutine(ReiniciarEpisodioTrasAnimacion());
         }
         else
         {
+            // Modo jugador humano: animación + recarga de escena
             playerShooting.DisableEffects ();
             anim.SetTrigger ("Die");
+            StartCoroutine(GameOverTrasAnimacion());
         }
+    }
+
+    private IEnumerator ReiniciarEpisodioTrasAnimacion()
+    {
+        // Pequeña pausa para que la animación de muerte se aprecie (inferencia)
+        // En entrenamiento (TimeScale = 10) esto dura <0.3 s reales
+        yield return new WaitForSeconds(2f);
+        _playerAgent.EndEpisode();
+    }
+
+    private IEnumerator GameOverTrasAnimacion()
+    {
+        yield return new WaitForSeconds(2.5f);
+        // Si hay un SurvivalRecorder activo, él gestiona la recarga de escena.
+        if (FindFirstObjectByType<SurvivalRecorder>() == null)
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void RestartLevel()

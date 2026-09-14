@@ -65,3 +65,28 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Modelos DQN entrenados (ficheros .pth pesados)
+/dqn/
+/dqn_brujula/
+/dqn_rayos/
+/models_dqn/
+*.pth
+
+# TensorBoard logs
+/runs/
+/tensorboard/
+
+# Capturas de cámara
+/frame_camara/
+
+# Librería ml-agents (instalar via pip)
+/ml-agents/
+
+# Ficheros de resultados de evaluación
+/resultados/
+
+# Slnx (Visual Studio 2022+)
+*.slnx
+
+# UserSettings layouts (locales)
+/UserSettings/Layouts/

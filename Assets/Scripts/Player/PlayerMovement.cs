@@ -25,18 +25,35 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (_isAgent)
+        PlayerAgent agent = GetComponent<PlayerAgent>();
+
+        // Modos ML-Agents (DQN, PPO): OnActionReceived gestiona el movimiento.
+        if (agent != null && agent.currentMode != PlayerAgent.TrainingMode.FSM_o_Jugador
+                          && agent.currentMode != PlayerAgent.TrainingMode.Subsumption)
             return;
 
+        if (agent != null && agent.currentMode != PlayerAgent.TrainingMode.FSM_o_Jugador)
+        {
+            // FSM / Subsunción: el estado llama a Move() y Animating() directamente.
+            return;
+        }
+
+        // Jugador humano (sin PlayerAgent) O modo FSM_o_Jugador con aimbot
         Move(_playerInputs.HorizontalAxis, _playerInputs.VerticalAxis);
-        Turning(Input.mousePosition);
         Animating(_playerInputs.HorizontalAxis, _playerInputs.VerticalAxis);
+
+        // La rotación la gestiona PlayerAgent.FixedUpdate (aimbot) en FSM_o_Jugador;
+        // en modo humano puro (sin agente) usamos el ratón.
+        if (agent == null)
+            Turning(Input.mousePosition);
     }
 
     public void Move(float h, float v)
     {
         movement.Set(h, 0f, v);
-        movement = movement.normalized * speed * Time.deltaTime;
+        // Time.fixedDeltaTime es constante (0.02s); evita que el movimiento dependa
+        // del framerate cuando Move() se llama desde Update (modo FSM).
+        movement = movement.normalized * speed * Time.fixedDeltaTime;
         playerRigidbody.MovePosition(transform.position + movement);
     }
 
@@ -64,7 +81,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void Animating(float h, float v)
+    public void Animating(float h, float v)
     {
         bool walking = h != 0f || v != 0f;
         anim.SetBool("IsWalking", walking);

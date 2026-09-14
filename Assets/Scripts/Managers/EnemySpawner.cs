@@ -8,6 +8,7 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private Enemy _enemyPrefab;
     [SerializeField] private bool _isBossSpawner = false;
     [SerializeField] private Transform[] _spawnPoints;
+    public Transform[] SpawnPoints => _spawnPoints;
     [SerializeField] private float _spawnTime = 3f;
     [SerializeField] private EnemySpawnerManager _enemySpawnerManager;
     private Queue<Enemy> enemyPool = new Queue<Enemy>();
